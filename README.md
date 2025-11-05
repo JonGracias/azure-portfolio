@@ -10,6 +10,9 @@
 - GITHUB_USERNAME
 - GITHUB_TOKEN (optional but recommended)
 - NEXT_PUBLIC_BASE_URL (http://localhost:3000 for dev, your site URL in prod)
+- GITHUB_CLIENT_ID=Ov23liVCLUo4QINNmyvv
+- GITHUB_CLIENT_SECRET=b037515e2147034aa32b12a488e7130e9233c42c
+- NEXT_PUBLIC_BASE_URL=http://localhost:3000
 
 Run locally:
 ```bash
