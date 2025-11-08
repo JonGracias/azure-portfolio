@@ -8,16 +8,17 @@ import MobileDetect from 'mobile-detect';
 export default function RepoList({ repos }: { repos: Repo[] }) {
 const [hoverPos, setHoverPos] = useState<{ top: number; left: number; height: number; width: number }>({ top: 0, left: 0, height: 0, width: 0 });
 const [hoveredRepo, setHoveredRepo] = useState<Repo | null>(null);
-  const [viewportWidth, setViewportWidth] = useState(0);
+const [viewportWidth, setViewportWidth] = useState(0);
+const [isMobile, setIsMobile] = useState<boolean>(false);
 
-  // removed `context` usage
-  const [isMobile, setIsMobile] = useState<boolean>(false);
   useEffect(() => {
-    // run only on client
-    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-    // MobileDetect import assumed present elsewhere in file
-    const md = new MobileDetect(ua);
-    setIsMobile(Boolean(md.mobile()));
+    // Function to update state based on window width
+    const handleResize = () => setIsMobile(window.innerWidth < 640);
+
+    handleResize(); // run once on mount
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ const [hoveredRepo, setHoveredRepo] = useState<Repo | null>(null);
         shadow-md
         rounded-2xl
       ">
-      {!isMobile && hoveredRepo && (
+      {isMobile && hoveredRepo && (
       <div className="
         fixed z-[1]         
         transition-transform duration-200 ease-out
@@ -67,7 +68,7 @@ const [hoveredRepo, setHoveredRepo] = useState<Repo | null>(null);
         />
         </div>
       </div>
-      )}
+      )} 
       <div className="
       grid gap-6
       grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
@@ -80,7 +81,7 @@ const [hoveredRepo, setHoveredRepo] = useState<Repo | null>(null);
           <div
             key={r.id}
             className={`group relative w-full sm:w-[12rem] h-[12rem] 
-            ${r.id === hoveredRepo?.id && !isMobile ? "invisible" : ""}`}
+       `}
           >
             <RepoCard
               repo={r}
