@@ -9,11 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "mobile-detect": "^1.4.5",
     "next": "16.0.1",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
   "devDependencies": {
+    "@floating-ui/react": "^0.27.16",
     "@tailwindcss/line-clamp": "^0.4.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",

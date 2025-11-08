@@ -1,104 +1,40 @@
 ﻿// src/components/RepoCard.tsx
 "use client";
 import { useState, useEffect, useRef, JSX } from "react";
+import {  useFloating, size, autoUpdate  } from "@floating-ui/react";
 import { Repo } from "@/lib/types";
 
 export default function RepoCard(
-  { repo, setHoverPos, setHoveredRepo/* , onWheel */ }: 
-  { repo: Repo; setHoverPos: (pos: { top: number; left: number; height: number; width: number }) => void;
-                setHoveredRepo: (repo: Repo | null) => void 
-                /* onWheel: (e: React.WheelEvent) => void */ }): JSX.Element {
+  { referenceRef, repo }: 
+  { referenceRef: React.RefObject<HTMLDivElement>; repo: Repo }): JSX.Element {
   
   const [count, setCount] = useState<number>(repo.stargazers_count);
   const [starring, setStarring] = useState<boolean>(false);
   const [starred, setStarred] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const updated: string = new Date(repo.updated_at).toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
     day: "numeric",
   });
 
- // measure once after render
-  const [position, setPosition] = useState<{ 
-    top: number; 
-    left: number; 
-    width: number; 
-    height: number; 
-  } | null>(null);
-
-  useEffect(() => {
-    if (cardRef.current) {
-      const rect = cardRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.top,
-        left: rect.left,
-        width: rect.width,
-        height: rect.height
-      });
-    }
-  }, []); // runs once after mount
-
-  const handleHover = (repo: Repo): void => {
-    if (!position) return; // safety check
-    setHoverPos({
-      top: position.top,
-      left: position.left,
-      width: position.width,
-      height: position.height,
-    });
-    setHoveredRepo(repo);
-  };
-
-  const handleLeave = (): void => {
-    setHoveredRepo(null);
-  };
-
-  useEffect(() => {
-    const updatePosition = () => {
-      if (cardRef.current) {
-        const rect = cardRef.current.getBoundingClientRect();
-        setPosition({
-          top: rect.top,
-          left: rect.left,
-          width: rect.width,
-          height: rect.height
-        });
-      }
-    };
-
-    // Measure initially
-    updatePosition();
-
-    // Recalculate on window resize or scroll
-    window.addEventListener("resize", updatePosition);
-    window.addEventListener("scroll", updatePosition, true);
-
-    return () => {
-      window.removeEventListener("resize", updatePosition);
-      window.removeEventListener("scroll", updatePosition, true);
-    };
-  }, []);
-
-
-  useEffect(() => {
-    const handleWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      document.querySelector(".scroll-container")?.scrollBy({
-        top: e.deltaY,
-        behavior: "smooth",
-      });
-      setHoveredRepo(null);
-    };
-
-    const popup = document.getElementById("popup-card");
-    popup?.addEventListener("wheel", handleWheel, { passive: false });
-
-    return () => popup?.removeEventListener("wheel", handleWheel);
-  }, []);
-
+  const { refs, floatingStyles } = useFloating({
+    elements: { reference: referenceRef.current },
+    placement: "top-start",
+    strategy: "absolute", // <<< key change — same stacking context as grid
+    middleware: [
+      size({
+        apply({ rects, elements }) {
+          Object.assign(elements.floating.style, {
+            width: `${rects.reference.width}px`,
+            height: `${rects.reference.height}px`,
+          });
+        },
+      }),
+    ],
+    whileElementsMounted: autoUpdate,
+  });
 
   useEffect(() => {
     async function checkStarred(): Promise<void> {
@@ -152,9 +88,12 @@ export default function RepoCard(
 
   return (
     <div 
-      ref={cardRef}
-      onMouseEnter={(e) => handleHover(repo)}
-      onMouseLeave={handleLeave}
+      ref={refs.setFloating}
+      style={{
+        ...floatingStyles,
+        zIndex: 50,
+        pointerEvents: "auto", // enable pointer capture here
+      }}
       className={[
         "group block w-full rounded-xl border shadow-sm",
         "bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700",
@@ -165,7 +104,10 @@ export default function RepoCard(
         "hover:shadow-xl focus:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500",
         "min-h-[12rem]",
         "rounded-xl",
-      ].join(" ")}> 
+        "z-50",
+        "transition-transform duration-200"
+      ].join(" ")} 
+      onClick={(e) => e.stopPropagation()}>
 
       {/* Main Card Content */}
       {!showConfirm && !message && (

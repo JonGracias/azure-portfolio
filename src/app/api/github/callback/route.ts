@@ -19,7 +19,7 @@ export async function GET(req: Request) {
   const token = tokenJson.access_token as string | undefined;
   if (!token) return new NextResponse("Token exchange failed", { status: 500 });
 
-  const redirectTo = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const redirectTo = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:8080";
   const res = NextResponse.redirect(redirectTo);
 
   // set cookie on the response

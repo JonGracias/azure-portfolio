@@ -13,7 +13,7 @@ export default async function Page() {
         <h1 className="text-4xl font-extrabold text-blue-500 mb-3">
           Jonathan Gracias – Portfolio
         </h1>
-        <p className="text-white-600 max-w-2xl mx-auto">
+        <p className="text-white-600 max-w-2xl mx-4 md:text-left">
           A collection of my projects spanning backend automation, web
           development, and creative technology. Built with Next.js and
           deployed on Azure.
@@ -28,7 +28,7 @@ export default async function Page() {
         <RepoList repos={repos} />
       </section>
 
-      <footer className="text-center text-sm text-gray-500 mt-16">
+      <footer className="text-center text-sm text-gray-500 mt-16 fixed bottom-12 left-1/2 -translate-x-1/2">
         © {new Date().getFullYear()} Jonathan Gracias — Built with Next.js + Tailwind + Azure
       </footer>
     </main>

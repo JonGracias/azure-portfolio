@@ -16,7 +16,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #09090a;
     --foreground: #ededed;
   }
 }
@@ -32,4 +32,42 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Hide scrollbar space and style when visible */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;            /* scrollbar thickness */
+  background: transparent; /* invisible background */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 9999px;
+  transition: background 0.3s ease;
+}
+
+/* On hover, show a dark scrollbar */
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: rgba(107, 114, 128, 0.4); /* Tailwind gray-500 w/ opacity */
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(31, 41, 55, 0.7); /* Tailwind gray-800 */
+}
+
+/* For Firefox */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.custom-scrollbar:hover {
+  scrollbar-color: rgba(107, 114, 128, 0.4) transparent;
+}
+
+html {
+  scrollbar-gutter: stable both-edges;
 }

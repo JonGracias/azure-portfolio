@@ -31,6 +31,6 @@ export async function fetchRepos() {
     forks_count: r.forks_count,
     open_issues_count: r.open_issues_count,
     updated_at: r.updated_at,
-    owner: r.owner?.login ?? "", // 👈 new field added here
+    owner: r.owner?.login ?? "",
   }));
 }
