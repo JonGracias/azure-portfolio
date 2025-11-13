@@ -1,25 +1,23 @@
 ﻿// src/components/RepoCard.tsx
 "use client";
 import { useState, useEffect, useRef, JSX } from "react";
+import { useRepoContext } from "@/context/RepoContext";
 import { Repo } from "@/lib/types";
 
-export default function RepoCard({
-      repo,
-      starred,
-      setStarred,
-      isLoaded,
-      setIsLoaded,
-      count,
-      setCount,
-    }: {
-      repo: Repo;
-      starred: boolean;
-      setStarred: (value: boolean) => void;
-      isLoaded: boolean;
-      setIsLoaded: (value: boolean) => void;
-      count: number;
-      setCount: (value: number) => void;
-    }): JSX.Element {
+export default function RepoList({ repo }: { repo: Repo }) {
+  const {
+    starred,
+    setStarred,
+    isLoaded,
+    count,
+    setCount,
+  } = useRepoContext();
+  const repoStarred = starred[repo.name] ?? false;
+  const starCount = count[repo.name] ?? 0;
+  const updateStarred = (value: boolean) =>
+    setStarred(prev => ({ ...prev, [repo.name]: value }));
+  const updateCount = (value: number) =>
+    setCount(prev => ({ ...prev, [repo.name]: value }));
 
   const [starring, setStarring] = useState<boolean>(false);
   const [showConfirm, setShowConfirm] = useState<boolean>(false);
@@ -49,7 +47,7 @@ export default function RepoCard({
     return () => popup?.removeEventListener("wheel", handleWheel);
   }, []);
 
-  // Check Star 
+  /* // Check Star 
   useEffect(() => {
     async function checkStarred(): Promise<void> {
       try {
@@ -58,13 +56,13 @@ export default function RepoCard({
         });
         const data = await res.json();
 
-        if (data.authed && data.starred) setStarred(true);
+        if (data.authed && data.starred) updateStarred(true);
       } finally {
-        setIsLoaded(true); // ✅ mark it as done, success or fail
+        updateIsLoaded(true);
       }
-    }
+    } 
     checkStarred();
-  }, [repo.owner, repo.name]);
+  }, [repo.owner, repo.name]); */
 
   // Handle Star
   async function handleStar(): Promise<void> {
@@ -83,8 +81,8 @@ export default function RepoCard({
       }
 
       if (data.ok) {
-        setStarred(true);
-        if (typeof data.count === "number") setCount(data.count);
+        updateStarred(true);
+        updateCount(data.count);
       }
     } finally {
       setStarring(false);
@@ -115,7 +113,7 @@ export default function RepoCard({
       className={[
         "group block w-full rounded-xl border shadow-sm",
         "bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-700",
-        "hover:border-blue-400  active:border-blue-400",
+        "hover:border-blue-400 active:border-blue-400 hover:dark:border-orange-400 hover:dark:active-orange-400",
         "transform-gpu origin-center transition-transform duration-200 ease-out",
         "hover:scale-105",
         "relative z-0 md:group-hover:z-20 md:group-focus-within:z-20 md:group-hover-within:overflow-visible",
@@ -168,21 +166,21 @@ export default function RepoCard({
                     w-1/2 text-right truncate">
                       
                   {/* Star Button */}
-                  {!starred && (
+                  {!repoStarred && (
                     <button
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.preventDefault();
                         e.stopPropagation();
                         handleStar();
                       }}
-                      disabled={starring || starred}
+                      disabled={starring || repoStarred}
                       className="text-yellow-600 hover:text-yellow-700 font-semibold transition-colors">
-                      {starring ? "Starring..." : `${count} ☆`}
+                      {starring ? "Starring..." : `${starCount} ☆`}
                     </button>
                   )}
             
                   {/* Unstar Button */}
-                  {starred && (
+                  {repoStarred && (
                     <button
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.preventDefault();
@@ -191,7 +189,7 @@ export default function RepoCard({
                       }}
                       disabled={starring}
                       className="text-yellow-600 hover:text-yellow-700 font-semibold transition-colors">
-                      {count}⭐
+                      {starCount}⭐
                     </button>
                   )} 
               </div>

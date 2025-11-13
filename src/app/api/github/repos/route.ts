@@ -1,4 +1,6 @@
-﻿import { NextResponse } from "next/server";
+﻿export const revalidate = 3600;
+
+import { NextResponse } from "next/server";
 import { fetchRepos } from "@/lib/github";
 
 export async function GET() {

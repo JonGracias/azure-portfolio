@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
   const { owner, repo } = await req.json();
 
-  // ⭐ Star the repo
+  // Star the repo
   const starRes = await fetch(`https://api.github.com/user/starred/${owner}/${repo}`, {
     method: "PUT",
     headers: {
@@ -25,11 +25,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: await starRes.text() || "GitHub star failed" }, { status: starRes.status });
   }
 
-  // 🔄 Fetch fresh star count
+  // Fetch fresh star count
   const info = await fetch(`https://api.github.com/repos/${owner}/${repo}?t=${Date.now()}`, {
     headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "nextjs-star",
+      Accept: "application/vnd.github+json", // Media Types
+      "User-Agent": "nextjs-star",           // User Agent
     },
     cache: "no-store",
     next: { revalidate: 0 },

@@ -1,53 +1,85 @@
-﻿// src/components/RepoList.tsx
-"use client";
-import { useRef, useEffect, useState } from "react";
+﻿"use client";
+import { useRef, useEffect, useState, useMemo } from "react";
+import { useRepoContext } from "@/context/RepoContext";
 import RepoCard from "./RepoCard";
 import { Repo } from "@/lib/types";
-import MobileDetect from 'mobile-detect'; 
 
-export default function RepoList({ repos }: { repos: Repo[] }) {
+export default function RepoList() {
   const [hoverPos, setHoverPos] = useState<{ top: number; left: number; height: number; width: number }>({ top: 0, left: 0, height: 0, width: 0 });
-  const [hoveredRepo, setHoveredRepo] = useState<Repo | null>(null);
   const [scrolling, setScrolling] = useState(false);
   const hoveredRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [starred, setStarred] = useState<Record<string, boolean>>({});
-  const [isLoaded, setIsLoaded] = useState<Record<string, boolean>>({});
-  const [count, setCount] = useState<Record<string, number>>({});
+
+  const {
+    hoveredRepo,
+    setHoveredRepo,
+    repos
+  } = useRepoContext();
 
 
-  // Mouse Enter
+  // Filters and sorting
+  const [filters, setFilters] = useState({
+    language: "All",
+    sortBy: "activity", // "created" | "stars" | "activity" | "updated"
+  });
+
+  // Get available languages dynamically
+  const languages = useMemo(() => {
+    const langs = new Set<string>();
+    repos.forEach(r => r.language && langs.add(r.language));
+    return ["All", ...Array.from(langs).sort((a, b) => a.localeCompare(b))];
+  }, [repos]);
+
+  // Compute filtered + sorted list
+  const visibleRepos = useMemo(() => {
+    let list = [...repos];
+
+    // Filter by language
+    if (filters.language !== "All") {
+      list = list.filter(r =>
+        // If the repo has a full language map, check it
+        (r.languages && Object.keys(r.languages).includes(filters.language)) ||
+        // Otherwise fall back to the primary language
+        r.language === filters.language
+      );
+    }
+
+    // Sorting options
+    list.sort((a, b) => {
+      switch (filters.sortBy) {
+        case "created":
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case "stars":
+          return (b.stargazers_count ?? 0) - (a.stargazers_count ?? 0);
+        case "activity":
+          return new Date(b.pushed_at).getTime() - new Date(a.pushed_at).getTime();
+        case "updated":
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [repos, filters]);
+
+  // Hover
   function handleMouseEnter(el: HTMLDivElement, repo: Repo) {
     hoveredRef.current = el;
     setHoveredRepo(repo);
 
-  const rect = el.getBoundingClientRect();
-  const containerRect = scrollContainerRef.current?.getBoundingClientRect();
-  if (!containerRect) return;
-  const containerRectBottm = containerRect.top + containerRect.height;
-  const rectBottm = rect.top + rect.height;
+    const rect = el.getBoundingClientRect();
+    const containerRect = scrollContainerRef.current?.getBoundingClientRect();
+    if (!containerRect) return;
+    const containerRectBottom = containerRect.top + containerRect.height;
+    const rectBottom = rect.top + rect.height;
 
-  let topPos =
-    rect.top < containerRect.top
-      ? containerRect.top + 10
-      : rect.top;
+    let topPos = rect.top < containerRect.top ? containerRect.top + 10 : rect.top;
+    topPos = rectBottom > containerRectBottom ? containerRectBottom + 20 - rect.height : topPos;
 
-  topPos = 
-    rectBottm > containerRectBottm
-      ? (containerRectBottm + 20) - (rect.height)
-      : topPos;
-
-  setHoverPos({
-    top: topPos,
-    left: rect.left,
-    width: rect.width,
-    height: rect.height,
-  });
-
-    console.log("Hovered:", repo.name, hoverPos);
+    setHoverPos({ top: topPos, left: rect.left, width: rect.width, height: rect.height });
   }
 
-  // Mouse Leave
   function handleMouseLeave() {
     hoveredRef.current = null;
     setHoveredRepo(null);
@@ -58,19 +90,12 @@ export default function RepoList({ repos }: { repos: Repo[] }) {
     const container = scrollContainerRef.current;
     if (!container) return;
 
-   let scrollTimeout: ReturnType<typeof setTimeout>;
-   
+    let scrollTimeout: ReturnType<typeof setTimeout>;
     const handleScroll = () => {
       setScrolling(true);
       clearTimeout(scrollTimeout);
-
-      // hide popup immediately
       setHoveredRepo(null);
-
-      // wait 150ms after user stops scrolling
-      scrollTimeout = setTimeout(() => {
-        setScrolling(false);
-      }, 150);
+      scrollTimeout = setTimeout(() => setScrolling(false), 150);
     };
 
     container.addEventListener("scroll", handleScroll);
@@ -80,22 +105,17 @@ export default function RepoList({ repos }: { repos: Repo[] }) {
     };
   }, []);
 
-  // Resize Listener
+  // Resize
   useEffect(() => {
-    
-    const handleResize = () => {
-      console.log("Resize")
-    };
-
+    const handleResize = () => {};
     window.addEventListener("resize", handleResize);
-    handleResize(); // set initial
-
+    handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-
   return (
-    <section ref={scrollContainerRef}
+    <section
+      ref={scrollContainerRef}
       className="
         scroll-container
         w-full mx-auto
@@ -103,72 +123,88 @@ export default function RepoList({ repos }: { repos: Repo[] }) {
         custom-scrollbar
         bg-gray-100 dark:bg-gray-800
         border border-gray-300 dark:border-gray-700
-        sm:max-w-[27.6rem] lg:max-w-[41.1rem] xl:max-w-[54.75rem] 
-        sm:max-h-[27.6rem] lg:max-h-[41.1rem] xl:max-h-[54.75rem] 
+        sm:max-w-[27.6rem] lg:max-w-[41.1rem] xl:max-w-[54.75rem]
+        [height:calc(100dvh-26rem)]
         shadow-md
-        rounded-2xl
-      ">
-      {!scrolling && hoveredRepo &&(
+        rounded-2xl">
+      {/* Filter bar */}
       <div className="
-        fixed z-[20]         
-        transition-transform duration-200 ease-out
-        hidden sm:block"
-        style={{
-          top: `${hoverPos.top - 0}px`,
-          left: `${hoverPos.left - 16}px`,
-          width: hoverPos.width,
-          height: hoverPos.height,
-          transform: "scale(1.1)",
-        }}
-      >
-        <div className="w-full sm:w-[12rem] h-auto"
-          id="popup-card"
-          onMouseLeave={handleMouseLeave}>
-          <RepoCard
-            repo={hoveredRepo}
-            starred={starred[hoveredRepo.name] ?? false}
-            setStarred={(value: boolean) =>
-            setStarred(prev => ({ ...prev, [hoveredRepo.name]: value }))}
-            count={count[hoveredRepo.name] ?? hoveredRepo.stargazers_count}
-            setCount={(value) => 
-            setCount(prev => ({ ...prev, [hoveredRepo.name]: value }))}
-            isLoaded={isLoaded[hoveredRepo.name] ?? false}
-            setIsLoaded={(value: boolean) =>
-            setIsLoaded(prev => ({ ...prev, [hoveredRepo.name]: value }))
-          }/>
-        </div>
+            sticky top-0 z-10 
+            bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur 
+            border-b border-gray-300 dark:border-gray-700 
+            px-4 py-3 rounded-t-2xl 
+            flex flex-wrap items-center gap-3">
+
+          {/* Filter */}
+          <label className="text-sm font-medium">Language:</label>
+          <select
+            value={filters.language}
+            onChange={(e) => setFilters((f) => ({ ...f, language: e.target.value }))}
+            className="
+              px-2 py-1 rounded-lg 
+              border border-gray-300 dark:border-gray-700 bg-white dark:bg-neutral-900">
+
+            {languages.map((lang) => (
+              <option key={lang} value={lang}>
+                {lang}
+              </option>
+
+            ))}
+          </select>
+
+          {/* Sort */}
+          <label className="ml-2 text-sm font-medium">Sort by:</label>
+          <select
+            value={filters.sortBy}
+            onChange={(e) => setFilters((f) => ({ ...f, sortBy: e.target.value }))}
+            className="px-2 py-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-neutral-900">
+
+            <option value="stars">Most Stars</option>
+            <option value="created">Date Created</option>
+            <option value="activity">Most Activity</option>
+            <option value="updated">Last Updated</option>
+
+          </select>
       </div>
-      )} 
 
-      <div className="
-      grid gap-6
-      grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
-      auto-rows-[12rem] 
-      overflow-hidden
-      relative
-      isolate
-      p-4">
-        {repos.map((repo) => (
-          <div
-            key={repo.id}
-            className="relative w-full sm:w-[12rem] h-[12rem]">
-            <div onMouseEnter={(e) => handleMouseEnter(e.currentTarget, repo)}>
-              <RepoCard 
-              repo={repo}
-              starred={starred[repo.name] ?? false}
-              setStarred={(value: boolean) =>
-                setStarred(prev => ({ ...prev, [repo.name]: value }))}
-                isLoaded={isLoaded[repo.name] ?? false}
-                setIsLoaded={(value: boolean) =>
-                setIsLoaded(prev => ({ ...prev, [repo.name]: value }))}
-                count={count[repo.name] ?? repo.stargazers_count}
-                setCount={(value) => 
-                setCount(prev => ({ ...prev, [repo.name]: value }))}
-              />
-            </div>
+      {/* Pop-up Card */}
+      {!scrolling && hoveredRepo && (
+        <div
+          className="fixed z-[20] transition-transform duration-200 ease-out hidden sm:block"
+          style={{
+            top: `${hoverPos.top}px`,
+            left: `${hoverPos.left - 16}px`,
+            width: hoverPos.width,
+            height: hoverPos.height,
+            transform: "scale(1.1)",
+            }}>
 
+          <div className="w-full sm:w-[12rem] h-auto" id="popup-card" onMouseLeave={handleMouseLeave}>
+            <RepoCard repo={hoveredRepo}/>
           </div>
+        </div>
+      )}
 
+      {/* Grid */}
+      <div
+        className="
+          grid gap-10
+          grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4
+          auto-rows-[12rem]
+          overflow-hidden
+          relative
+          isolate
+          p-8 pt-3
+        "
+      >
+        {visibleRepos.map((repo) => (
+          <div key={repo.id} className="relative w-full sm:w-[12rem] h-auto">
+            <div onMouseEnter={(e) => handleMouseEnter(e.currentTarget, repo)}>
+              <div className="pointer-events-none">
+                <RepoCard repo={repo}/>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </section>
